@@ -1,8 +1,7 @@
 
 name: Extract REBBA Server ZIP
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 permissions:
   contents: write
@@ -11,37 +10,36 @@ jobs:
   extract:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract ZIP safely
+      - name: Extract archive
         run: |
           python3 - <<'PY'
           import zipfile
           from pathlib import Path
 
-          archives = list(Path(".").glob("*.zip"))
-          if len(archives) != 1:
-              raise SystemExit("Expected exactly one ZIP file")
+          files = list(Path(".").glob("*.zip"))
+          if len(files) != 1:
+              raise SystemExit("Expected one ZIP archive")
 
-          archive = archives[0]
-          destination = Path("server").resolve()
+          dest = Path("server").resolve()
 
-          with zipfile.ZipFile(archive) as z:
-              for item in z.infolist():
-                  target = (destination / item.filename).resolve()
-                  if target != destination and destination not in target.parents:
-                      raise SystemExit("Unsafe ZIP path detected")
-              z.extractall(destination)
+          with zipfile.ZipFile(files[0]) as z:
+              for info in z.infolist():
+                  target = (dest / info.filename).resolve()
+                  if target != dest and dest not in target.parents:
+                      raise SystemExit("Unsafe archive path")
+              z.extractall(dest)
 
-          print("Extraction completed:", archive.name)
+          print("ZIP extracted successfully")
           PY
 
-      - name: Commit extracted files
+      - name: Save extracted files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add server/
-          git commit -m "Extract REBBA server files" || echo "No changes"
+          git commit -m "Extract REBBA server"
           git push
           
